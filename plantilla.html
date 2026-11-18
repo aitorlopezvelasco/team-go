@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team GO</title>
+<meta name="theme-color" content="#161a44">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icono-192.png">
+<!-- Fuentes: si no hay conexión, la app usa las del sistema y sigue funcionando. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Idea de diseño: marcador de estadio. Una cabecera «arena» azul noche con el título en
+   condensada pesada y una franja diagonal del color de la liga; debajo, todo tranquilo
+   para que manden los colores de tipo. El acento cambia con la liga elegida.
+   Las fuentes vienen de Google Fonts; sin conexión se usa la condensada del sistema. */
+:root{
+  --fondo:#eceef6; --sup:#ffffff; --sup2:#e4e7f2; --tinta:#15193a; --tinta2:#5a6080; --linea:#d0d4e4;
+  --arena:#161a44; --arena2:#0e1130;
+  --liga:#2f6fe4; --liga-tinta:#ffffff; --liga-txt:color-mix(in srgb,var(--liga) 72%,var(--tinta));
+  --bien:#12804a; --aviso:#a66400; --mal:#c8322b;
+  --f-tit:"Big Shoulders Display","Roboto Condensed","sans-serif-condensed","Avenir Next Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-txt:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --r:16px; --sombra:0 1px 0 rgba(21,25,58,.04),0 6px 18px -10px rgba(21,25,58,.25);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --fondo:#090b1a; --sup:#141833; --sup2:#1e2347; --tinta:#eef0ff; --tinta2:#9aa1c6; --linea:#2a3160;
+    --arena:#171c4a; --arena2:#0c0f2a; --bien:#57d894; --aviso:#ffc24d; --mal:#ff8073;
+    --sombra:0 0 0 rgba(0,0,0,0); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --fondo:#090b1a; --sup:#141833; --sup2:#1e2347; --tinta:#eef0ff; --tinta2:#9aa1c6; --linea:#2a3160;
+  --arena:#171c4a; --arena2:#0c0f2a; --bien:#57d894; --aviso:#ffc24d; --mal:#ff8073;
+  --sombra:0 0 0 rgba(0,0,0,0); color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--fondo);color:var(--tinta);font:16px/1.5 var(--f-txt);-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--liga-txt)}
+:focus-visible{outline:3px solid var(--liga-txt);outline-offset:2px}
+h1,h2,h3,h4{font-family:var(--f-tit);margin:0;text-wrap:balance;letter-spacing:.015em}
+.app{max-width:860px;margin:0 auto;padding:0 16px 104px}
+
+/* Arena: cabecera + ligas */
+.arena{position:relative;margin:0 -16px;padding:0 16px 18px;color:#fff;overflow:hidden;border-radius:0 0 26px 26px;
+  background:radial-gradient(130% 90% at 100% 0,color-mix(in srgb,var(--liga) 55%,transparent),transparent 62%),linear-gradient(170deg,var(--arena),var(--arena2));
+  transition:background .3s}
+.arena::before{content:"";position:absolute;inset:0 0 auto auto;width:240px;height:150px;pointer-events:none;opacity:.9;
+  background:linear-gradient(118deg,transparent 54%,var(--liga) 54% 63%,transparent 63% 68%,var(--liga) 68% 71%,transparent 71%)}
+.arena :focus-visible{outline-color:#fff}
+.cab{position:relative;display:flex;align-items:flex-end;gap:12px;padding:22px 0 16px}
+.cab h1{font-size:clamp(46px,13vw,64px);font-weight:900;text-transform:uppercase;line-height:.86;letter-spacing:.005em}
+.cab h1 span{display:inline-block;background:var(--liga);color:var(--liga-tinta);padding:.04em .16em 0;border-radius:8px;transform:skewX(-8deg);margin-left:.06em;transition:background .3s}
+.cab p{margin:8px 0 0;color:rgba(255,255,255,.72);font:600 12px var(--f-txt);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.cab .hueco{flex:1}
+.b-ico{position:relative;min-width:48px;height:44px;border-radius:22px;border:1px solid rgba(255,255,255,.28);background:rgba(10,12,34,.45);color:#fff;font:700 13px var(--f-txt);padding:0 14px;white-space:nowrap}
+
+.ligas{position:relative;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.liga{position:relative;text-align:left;padding:11px 10px 11px 18px;border-radius:14px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);color:#fff;display:flex;flex-direction:column;gap:1px;transition:background .2s,border-color .2s}
+.liga::before{content:"";position:absolute;left:7px;top:11px;bottom:11px;width:4px;border-radius:2px;background:var(--c)}
+.liga b{font:800 21px/1.05 var(--f-tit);text-transform:uppercase;letter-spacing:.02em}
+.liga small{color:rgba(255,255,255,.66);font-size:12px;line-height:1.3}
+.liga .est{font-size:12px;font-weight:700;margin-top:6px;line-height:1.25}
+.liga .est.on{color:#74e6aa} .liga .est.prox{color:#ffd166} .liga .est.off{color:rgba(255,255,255,.5);font-weight:500}
+.liga[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:var(--ct);box-shadow:0 8px 20px -10px var(--c)}
+.liga[aria-pressed="true"]::before{background:var(--ct);opacity:.55}
+.liga[aria-pressed="true"] small,.liga[aria-pressed="true"] .est{color:inherit;opacity:.82}
+
+.liga-info{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin:14px 0 4px;font-size:13.5px;line-height:1.45;color:var(--tinta2)}
+.liga-info .reglas{flex:1 1 260px}
+.b-act{border:1px solid var(--linea);background:var(--sup);border-radius:24px;padding:0 18px;font-weight:700;font-size:14.5px;min-height:48px;box-shadow:var(--sombra)}
+.aviso{background:color-mix(in srgb,var(--aviso) 14%,var(--sup));border:1px solid color-mix(in srgb,var(--aviso) 55%,var(--sup));border-radius:12px;padding:10px 12px;font-size:14px;margin:12px 0 0}
+
+/* Pestañas: una sola barra flotante */
+.tabs{position:sticky;bottom:10px;z-index:5;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:5px;margin-top:22px;border-radius:22px;
+  background:linear-gradient(170deg,var(--arena),var(--arena2));box-shadow:0 10px 26px -8px rgba(9,11,26,.55),0 0 0 1px rgba(255,255,255,.08) inset}
+.tabs a{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:52px;border-radius:17px;text-align:center;padding:0 2px;
+  font:800 17px/1 var(--f-tit);letter-spacing:.04em;text-decoration:none;color:rgba(255,255,255,.82);text-transform:uppercase;transition:background .2s}
+.tabs a small{font:500 11px/1.2 var(--f-txt);letter-spacing:0;color:rgba(255,255,255,.55);text-transform:none;margin-top:3px}
+.tabs a[aria-current="page"]{background:var(--liga);color:var(--liga-tinta)}
+.tabs a[aria-current="page"] small{color:inherit;opacity:.8}
+@media (max-width:480px){.tabs a{font-size:15px}.liga b{font-size:19px}}
+
+.vista>h2{font-size:34px;font-weight:900;line-height:1;text-transform:uppercase;margin:26px 0 6px}
+.vista>h2::after{content:"";display:block;width:44px;height:5px;border-radius:3px;background:var(--liga);margin-top:8px;transform:skewX(-20deg);transition:background .3s}
+.vista>.sub{color:var(--tinta2);font-size:14.5px;margin:0 0 14px;max-width:65ch}
+
+/* Filtros */
+.filtros{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.filtros input[type=search],.filtros select{width:100%;height:48px;border-radius:14px;border:1px solid var(--linea);background:var(--sup);padding:0 14px}
+.filtros input[type=search]{grid-column:1/-1}
+.conm{display:flex;align-items:center;gap:8px;min-height:48px;padding:0 12px;border-radius:14px;border:1px solid var(--linea);background:var(--sup);font-size:14px;font-weight:600;line-height:1.2}
+.conm input{width:20px;height:20px;flex:none;accent-color:var(--liga)}
+
+/* Chips de tipo */
+.tp{display:inline-flex;align-items:center;height:22px;padding:1px 9px 0;border-radius:6px;font:800 13.5px/1 var(--f-tit);letter-spacing:.07em;text-transform:uppercase;background:var(--tc);color:#fff;white-space:nowrap;box-shadow:inset 0 -2px 0 rgba(0,0,0,.16)}
+.tp.osc{color:#1b1c22}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+
+/* Tarjeta de Pokémon */
+.lista{display:flex;flex-direction:column;gap:10px}
+.pk{display:grid;grid-template-columns:46px 1fr;gap:4px 10px;background:var(--sup);border:1px solid var(--linea);border-radius:var(--r);padding:14px 14px 14px 0;position:relative;overflow:hidden;box-shadow:var(--sombra)}
+.pk::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:linear-gradient(165deg,var(--t1) 0 50%,var(--t2) 50% 100%)}
+.pk .rk{grid-row:1/3;font:900 30px/1 var(--f-tit);text-align:right;color:color-mix(in srgb,var(--tinta2) 55%,var(--sup));padding-left:14px;font-variant-numeric:tabular-nums}
+.pk .cabp{display:flex;flex-wrap:wrap;align-items:center;gap:5px 8px}
+.pk h3{font-size:25px;font-weight:800;line-height:1;letter-spacing:.02em}
+.pk .pts{margin-left:auto;font:800 17px/1 var(--f-tit);color:var(--liga-txt);font-variant-numeric:tabular-nums;border:1.5px solid currentColor;border-radius:6px;padding:3px 6px 2px}
+.pk .meta{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:8px}
+.pil{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--linea);font:600 12px var(--f-txt);background:var(--sup2)}
+.pil.rol{border:0;background:var(--tinta);color:var(--sup);font:800 13.5px/1 var(--f-tit);letter-spacing:.07em;text-transform:uppercase;padding-top:1px}
+.pil.p0{background:var(--mal);border-color:var(--mal);color:#fff}
+.pil.p1{background:var(--aviso);border-color:var(--aviso);color:#fff}
+:root[data-theme="dark"] .pil.p0,:root[data-theme="dark"] .pil.p1{color:#10122a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pil.p0,:root:not([data-theme="light"]) .pil.p1{color:#10122a}}
+.pil.nota{font-weight:500;color:var(--tinta2);background:transparent}
+.pk .mov{margin-top:8px;font-size:14.5px;line-height:1.4}
+.pk .mov b{font-weight:700}
+.pk .mov small{color:var(--tinta2);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.pk .evo{margin-top:8px;font-size:14.5px;line-height:1.4;display:flex;flex-wrap:wrap;gap:2px 6px;align-items:baseline}
+.pk .evo small{color:var(--tinta2);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.pk .evo a{margin-left:auto;font-size:12.5px;font-weight:600;white-space:nowrap}
+.pk .acc{grid-column:2;display:flex;gap:8px;margin-top:12px}
+.bt{flex:1;min-height:46px;border-radius:23px;border:1.5px solid var(--linea);background:var(--sup2);font-weight:700;font-size:14.5px;transition:background .15s,border-color .15s}
+.bt[aria-pressed="true"]{background:var(--bien);border-color:var(--bien);color:#fff}
+.bt.q[aria-pressed="true"]{background:var(--aviso);border-color:var(--aviso);color:#fff}
+:root[data-theme="dark"] .bt[aria-pressed="true"]{color:#090b1a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .bt[aria-pressed="true"]{color:#090b1a}}
+.bt.eq{flex:0 0 auto;padding:0 14px;background:transparent}
+.vacio{padding:22px 16px;border:2px dashed var(--linea);border-radius:var(--r);color:var(--tinta2);text-align:center}
+
+/* Equipo */
+.caja{background:var(--sup);border:1px solid var(--linea);border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:var(--sombra)}
+.caja>h3{font-size:23px;font-weight:800;line-height:1.05;text-transform:uppercase;margin-bottom:10px}
+.caja>h3 small{font:500 13px var(--f-txt);letter-spacing:0;color:var(--tinta2);text-transform:none;margin-left:6px}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.slot{min-height:124px;border-radius:14px;border:2px dashed var(--linea);background:var(--sup2);padding:10px 8px;display:flex;flex-direction:column;gap:6px;align-items:flex-start;text-align:left;position:relative;overflow:hidden}
+.slot.lleno{border:0;background:linear-gradient(170deg,var(--arena),var(--arena2));color:#fff;box-shadow:inset 0 5px 0 var(--t1)}
+.slot.lleno{padding-top:14px}
+.slot.sobre{border-color:var(--liga);border-style:solid}
+.slot .papel{font:800 14px/1 var(--f-tit);text-transform:uppercase;letter-spacing:.12em;color:var(--liga-txt)}
+.slot.lleno .papel{color:rgba(255,255,255,.7)}
+.slot b{font:800 clamp(15px,4.2vw,22px)/1 var(--f-tit);letter-spacing:.02em;overflow-wrap:anywhere}
+.slot .x{margin-top:auto;font-size:11.5px;color:var(--tinta2)}
+.slot.lleno .x{color:rgba(255,255,255,.55)}
+.fila{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.bp{min-height:50px;padding:0 18px;border-radius:25px;border:0;background:var(--liga);color:var(--liga-tinta);font-weight:800;font-size:15.5px;flex:1 1 200px;box-shadow:0 8px 18px -10px var(--liga);transition:background .3s}
+.bs{min-height:50px;padding:0 18px;border-radius:25px;border:1px solid var(--linea);background:var(--sup2);font-weight:700;font-size:14.5px;flex:1 1 140px}
+.bandeja{display:flex;flex-wrap:wrap;gap:6px}
+.ficha{min-height:42px;padding:0 14px 0 10px;border-radius:21px;border:1px solid var(--linea);border-left:8px solid var(--t1);background:var(--sup2);font-weight:700;font-size:14.5px;touch-action:manipulation}
+.ficha.q{border-style:dashed;border-left-style:solid}
+.ficha[disabled]{opacity:.4}
+.marc{display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap}
+.marc .num{font:900 68px/.82 var(--f-tit);font-variant-numeric:tabular-nums;color:var(--liga-txt)}
+.marc p{margin:0;font-size:13.5px;line-height:1.45;color:var(--tinta2);flex:1 1 200px}
+.barra{height:10px;border-radius:5px;background:var(--sup2);overflow:hidden;margin-top:12px}
+.barra i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,color-mix(in srgb,var(--liga) 60%,var(--arena)),var(--liga))}
+.cob{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:6px}
+.cb{border-radius:10px;border:1px solid var(--linea);padding:7px;display:flex;flex-direction:column;gap:5px;align-items:flex-start;font-size:11.5px;font-weight:600;line-height:1.3}
+.cb.ok{border-color:color-mix(in srgb,var(--bien) 60%,var(--sup));background:color-mix(in srgb,var(--bien) 11%,var(--sup))}
+.cb.ko{border-color:color-mix(in srgb,var(--mal) 60%,var(--sup));background:color-mix(in srgb,var(--mal) 12%,var(--sup))}
+.cb span.e{color:var(--tinta2)} .cb.ok span.e{color:var(--bien)} .cb.ko span.e{color:var(--mal)}
+.ley{font-size:13px;color:var(--tinta2);margin:10px 0 0}
+.alt{display:flex;flex-direction:column;gap:6px}
+.alt button{display:flex;justify-content:space-between;gap:10px;align-items:center;text-align:left;min-height:50px;border-radius:14px;border:1px solid var(--linea);background:var(--sup2);padding:6px 14px;font-size:14.5px;font-weight:600}
+.alt button b{font:900 22px/1 var(--f-tit);color:var(--liga-txt);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* Guía */
+.guia ol,.guia ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:10px}
+.guia li{max-width:68ch}
+.guia li::marker{color:var(--liga-txt)}
+.guia p{margin:0 0 8px;max-width:68ch}
+.guia .tp{vertical-align:1px}
+.paso{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:12px 0;border-top:1px solid var(--linea)}
+.paso:first-of-type{border-top:0;padding-top:0}
+.paso .papel{font:800 14px/1 var(--f-tit);text-transform:uppercase;letter-spacing:.1em;color:var(--liga-tinta);background:var(--liga);border-radius:6px;padding:6px 8px 4px;align-self:start;min-width:68px;text-align:center;transform:skewX(-8deg)}
+.paso h4{font-size:25px;font-weight:800;line-height:1}
+.paso p{grid-column:2;margin:0;font-size:14.5px}
+.mv{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:14.5px;padding:7px 0;border-top:1px dashed var(--linea)}
+.mv:first-of-type{border-top:0}
+.mv small{color:var(--tinta2)}
+.mv .n{font:800 16px/1.5 var(--f-tit);letter-spacing:.03em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ok-t{color:var(--bien);font-weight:700} .ko-t{color:var(--mal);font-weight:700}
+.ejemplo{font-size:13.5px;font-weight:700;color:var(--aviso)}
+
+/* Diálogo */
+dialog{border:1px solid var(--linea);border-radius:22px;background:var(--sup);color:var(--tinta);padding:20px;width:min(560px,calc(100% - 24px));max-height:88vh}
+dialog::backdrop{background:rgba(9,11,26,.66)}
+dialog h2{font-size:28px;font-weight:900;line-height:1;text-transform:uppercase;margin-bottom:10px}
+dialog ol{padding-left:20px;font-size:14.5px;display:flex;flex-direction:column;gap:8px}
+dialog code{background:var(--sup2);padding:1px 5px;border-radius:5px;font-size:12.5px;overflow-wrap:anywhere}
+dialog .est-d{font-size:14px;min-height:20px;margin:8px 0;font-weight:600}
+#toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:var(--tinta);color:var(--fondo);padding:10px 16px;border-radius:14px;font-weight:600;font-size:14.5px;max-width:calc(100% - 32px);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+#toast.v{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (min-width:640px){.filtros{grid-template-columns:2fr 1fr 1fr 1fr}.filtros input[type=search]{grid-column:auto}.arena{border-radius:0 0 30px 30px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="arena">
+  <header class="cab">
+    <div>
+      <h1>Team <span>GO</span></h1>
+      <p>Constructor de equipos PvP</p>
+    </div>
+    <div class="hueco"></div>
+    <button class="b-ico" id="bTema" type="button" aria-label="Cambiar entre modo claro y oscuro">Modo oscuro</button>
+  </header>
+
+  <div class="ligas" id="ligas" role="group" aria-label="Ligas de la semana"></div>
+  </div>
+  <section aria-label="Datos de la liga">
+    <div id="avisoCal"></div>
+    <div class="liga-info">
+      <div class="reglas" id="reglas"></div>
+      <button class="b-act" id="bActualizar" type="button">Actualizar datos de la liga</button>
+    </div>
+  </section>
+
+  <main id="vista" class="vista"></main>
+
+  <nav class="tabs" aria-label="Secciones">
+    <a href="#meta" data-v="meta">Meta<small>top 40</small></a>
+    <a href="#mis-pokemon" data-v="mis-pokemon">Mis Pokémon<small id="cMis">0</small></a>
+    <a href="#equipo" data-v="equipo">Equipo<small>constructor</small></a>
+    <a href="#guia" data-v="guia">Guía<small>cómo jugarlo</small></a>
+  </nav>
+</div>
+
+<dialog id="dlg">
+  <h2>Actualizar datos del meta</h2>
+  <p id="dlgFecha" style="margin:0 0 8px;font-size:14px;color:var(--tinta2)"></p>
+  <ol>
+    <li><b>Automático.</b> Pulsa «Descargar de PvPoke». La app baja los rankings y el GameMaster del repositorio público de PvPoke en GitHub y los guarda en este navegador. Necesita conexión. La página ya se actualiza sola cada martes por la noche; esto es solo por si quieres el meta del momento.</li>
+    <li><b>Con archivos.</b> Descarga <code>gamemaster.json</code> y el <code>rankings-1500.json</code> (o 2500 / 10000) de <code>github.com/pvpoke/pvpoke → src/data</code> y cárgalos aquí. Se aplican a la liga seleccionada.</li>
+    <li><b>Calendario.</b> En el repositorio de GitHub, edita <code>tools/plantilla.html</code> y busca <code>CALENDARIO</code>. Al guardar, la página se regenera sola.</li>
+  </ol>
+  <p style="font-size:13.5px;color:var(--tinta2);margin:8px 0">El calendario de rotaciones no viene de PvPoke: cámbialo a mano en el bloque <code>CALENDARIO</code> (lo publica Pokémon GO cada temporada; LeekDuck lo resume).</p>
+  <div class="est-d" id="dlgEst" role="status"></div>
+  <div class="fila">
+    <button class="bp" id="bDescargar" type="button">Descargar de PvPoke</button>
+    <label class="bs" style="display:flex;align-items:center;justify-content:center">Cargar archivos JSON<input id="fArch" type="file" accept=".json,application/json" multiple hidden></label>
+  </div>
+  <div class="fila">
+    <button class="bs" id="bRestaurar" type="button">Volver a los datos incluidos</button>
+    <button class="bs" id="bCerrar" type="button">Cerrar</button>
+  </div>
+</dialog>
+<div id="toast" role="status"></div>
+
+<script>
+/* ╔══════════════════════════════════════════════════════════════════════════════╗
+   ║  ACTUALIZAR CADA TEMPORADA (este archivo es la plantilla del repositorio)    ║
+   ║                                                                              ║
+   ║  1) CALENDARIO  → qué ligas están activas cada semana (se cambia a mano).    ║
+   ║     Las rotaciones son los martes a las 21:00 UTC (22:00 en la península).   ║
+   ║  2) DATOS_INCLUIDOS → top 40 de cada liga. NO hace falta tocarlo a mano:     ║
+   ║     usa el botón «Actualizar datos de la liga» (descarga de PvPoke) o        ║
+   ║     regenera el bloque con los rankings de                                   ║
+   ║     https://github.com/pvpoke/pvpoke/tree/master/src/data/rankings           ║
+   ║  3) LIGAS → añade aquí una copa nueva (Fantasy, Remix…) con la ruta de su    ║
+   ║     ranking en PvPoke y aparecerá sola en el selector.                       ║
+   ╚══════════════════════════════════════════════════════════════════════════════╝ */
+
+/* (3) LIGAS: id interno, nombre, límite de PC y ruta del ranking en PvPoke. */
+const LIGAS = [
+  {id:'great',     n:'Great League',        es:'Liga Super Ball',  cp:1500,  c:'#2f6fe4', ct:'#fff',    pvpoke:'all/overall/rankings-1500',
+   reglas:'Hasta 1500 PC. Sin restricciones de tipo.'},
+  {id:'megaultra', n:'Ultra League: Mega',  es:'Liga Ultra Ball, edición Mega', cp:2500, c:'#d9a300', ct:'#1b1500', pvpoke:'mega/overall/rankings-2500',
+   reglas:'Hasta 2500 PC. Megaevoluciones permitidas (una por equipo).'},
+  {id:'laic',      n:'Copa LAIC',           es:'Great League · Championship Series', cp:1500, c:'#0f9a86', ct:'#fff', pvpoke:'laic2027gbl/overall/rankings-1500',
+   reglas:'Hasta 1500 PC. Prohibidos los tipos Fuego, Siniestro, Acero y Hada, los legendarios, míticos y ultraentes, las megas y además: Altaria, Annihilape, Araquanid, Chansey, Clodsire, Corsola de Galar, Dusclops, Furret, Jellicent, Kingdra, Medicham, Oranguru, Snorlax y Wobbuffet.'},
+  {id:'ultra',     n:'Ultra League',        es:'Liga Ultra Ball',  cp:2500,  c:'#d9a300', ct:'#1b1500', pvpoke:'all/overall/rankings-2500',
+   reglas:'Hasta 2500 PC. Sin restricciones de tipo.'},
+  {id:'megamaster',n:'Master League: Mega', es:'Liga Master Ball, edición Mega', cp:10000, c:'#8b45d6', ct:'#fff', pvpoke:'mega/overall/rankings-10000',
+   reglas:'Sin límite de PC. Megaevoluciones y regresiones primigenias permitidas (una por equipo).'},
+  {id:'master',    n:'Master League',       es:'Liga Master Ball', cp:10000, c:'#8b45d6', ct:'#fff',    pvpoke:'all/overall/rankings-10000',
+   reglas:'Sin límite de PC.'},
+];
+
+/* (1) CALENDARIO: una entrada por semana. Fechas en UTC. «otras» son formatos
+   sin ranking propio (se muestran como aviso, no se pueden seleccionar). */
+const CALENDARIO = [
+  {ini:'2026-11-10T21:00:00Z', fin:'2026-11-17T21:00:00Z', ligas:['great','megaultra','laic']},
+  {ini:'2026-11-17T21:00:00Z', fin:'2026-11-24T21:00:00Z', ligas:['ultra','megamaster','laic']},
+  {ini:'2026-11-24T21:00:00Z', fin:'2026-12-01T21:00:00Z', ligas:['master'], otras:['Copa Captura Mega (Great League)']},
+];
+
+/* (2) DATOS_INCLUIDOS: generado a partir de PvPoke. Formato por Pokémon:
+   id, n (nombre), d (nº Pokédex), t (tipos), sc (puntuación PvPoke 0-100),
+   r [lead, closer, switch], f (ataque rápido), c (ataques cargados),
+   w (a quién gana), l (quién le gana), fl (oscuro, mega, legendario, XL, MT Élite). */
+const DATOS_INCLUIDOS = /*__DATOS__*/null;
+
+/* ═════════ A partir de aquí no hace falta tocar nada cada semana ═════════ */
+
+const TIPOS = {
+  normal:{n:'Normal',c:'#9FA19F',o:1}, fire:{n:'Fuego',c:'#E62829'}, water:{n:'Agua',c:'#2980EF'},
+  electric:{n:'Eléctrico',c:'#FAC000',o:1}, grass:{n:'Planta',c:'#3FA129'}, ice:{n:'Hielo',c:'#3DCEF3',o:1},
+  fighting:{n:'Lucha',c:'#FF8000',o:1}, poison:{n:'Veneno',c:'#9141CB'}, ground:{n:'Tierra',c:'#915121'},
+  flying:{n:'Volador',c:'#81B9EF',o:1}, psychic:{n:'Psíquico',c:'#EF4179'}, bug:{n:'Bicho',c:'#91A119'},
+  rock:{n:'Roca',c:'#AFA981',o:1}, ghost:{n:'Fantasma',c:'#704170'}, dragon:{n:'Dragón',c:'#5060E1'},
+  dark:{n:'Siniestro',c:'#624D4E'}, steel:{n:'Acero',c:'#60A1B8'}, fairy:{n:'Hada',c:'#EF70EF',o:1}
+};
+const LT = Object.keys(TIPOS);
+/* Tabla de tipos (atacante → defensor): se = súper eficaz, nv = poco eficaz, im = "inmune" (doble resistencia en GO). */
+const TABLA = {
+  normal:{se:[],nv:['rock','steel'],im:['ghost']},
+  fire:{se:['grass','ice','bug','steel'],nv:['fire','water','rock','dragon'],im:[]},
+  water:{se:['fire','ground','rock'],nv:['water','grass','dragon'],im:[]},
+  electric:{se:['water','flying'],nv:['electric','grass','dragon'],im:['ground']},
+  grass:{se:['water','ground','rock'],nv:['fire','grass','poison','flying','bug','dragon','steel'],im:[]},
+  ice:{se:['grass','ground','flying','dragon'],nv:['fire','water','ice','steel'],im:[]},
+  fighting:{se:['normal','ice','rock','dark','steel'],nv:['poison','flying','psychic','bug','fairy'],im:['ghost']},
+  poison:{se:['grass','fairy'],nv:['poison','ground','rock','ghost'],im:['steel']},
+  ground:{se:['fire','electric','poison','rock','steel'],nv:['grass','bug'],im:['flying']},
+  flying:{se:['grass','fighting','bug'],nv:['electric','rock','steel'],im:[]},
+  psychic:{se:['fighting','poison'],nv:['psychic','steel'],im:['dark']},
+  bug:{se:['grass','psychic','dark'],nv:['fire','fighting','poison','flying','ghost','steel','fairy'],im:[]},
+  rock:{se:['fire','ice','flying','bug'],nv:['fighting','ground','steel'],im:[]},
+  ghost:{se:['psychic','ghost'],nv:['dark'],im:['normal']},
+  dragon:{se:['dragon'],nv:['steel'],im:['fairy']},
+  dark:{se:['psychic','ghost'],nv:['fighting','dark','fairy'],im:[]},
+  steel:{se:['ice','rock','fairy'],nv:['fire','water','electric','steel'],im:[]},
+  fairy:{se:['fighting','dragon','dark'],nv:['fire','poison','steel'],im:[]}
+};
+function mult(atq, defs){
+  let m = 1; const t = TABLA[atq]; if(!t) return 1;
+  for(const d of defs){ if(t.se.includes(d)) m*=1.6; else if(t.nv.includes(d)) m*=0.625; else if(t.im.includes(d)) m*=0.390625; }
+  return m;
+}
+
+//<CONVERTIDOR>
+/* Convierte un ranking de PvPoke + GameMaster al formato compacto de la app. */
+const MOV_ES = {"Acid":"Ácido","Acrobatics":"Acróbata","Aeroblast":"Aerochorro","Air Cutter":"Aire Afilado","Ancient Power":"Poder Pasado","Aqua Jet":"Acua Jet","Aqua Tail":"Acua Cola","Astonish":"Impresionar","Aura Sphere":"Esfera Aural","Avalanche":"Alud","Beak Blast":"Pico Cañón","Behemoth Bash":"Embate Supremo","Behemoth Blade":"Tajo Supremo","Bite":"Mordisco","Blast Burn":"Anillo Ígneo","Blizzard":"Ventisca","Body Slam":"Golpe Cuerpo","Bone Club":"Hueso Palo","Brave Bird":"Pájaro Osado","Breaking Swipe":"Vasto Impacto","Brick Break":"Demolición","Brine":"Salmuera","Brutal Swing":"Giro Vil","Bubble":"Burbuja","Bulldoze":"Terratemblor","Chilling Water":"Agua Fría","Clanging Scales":"Fragor Escamas","Close Combat":"A Bocajarro","Confusion":"Confusión","Crunch":"Triturar","Dark Pulse":"Pulso Umbrío","Disarming Voice":"Voz Cautivadora","Discharge":"Chispazo","Dive":"Buceo","Double Iron Bash":"Ferropuño Doble","Double Kick":"Doble Patada","Draco Meteor":"Cometa Draco","Dragon Ascent":"Ascenso Draco","Dragon Breath":"Dragoaliento","Dragon Claw":"Garra Dragón","Dragon Energy":"Dracoenergía","Dragon Tail":"Cola Dragón","Drain Punch":"Puño Drenaje","Draining Kiss":"Beso Drenaje","Drill Peck":"Pico Taladro","Drill Run":"Taladradora","Drum Beating":"Batería Asalto","Dynamax Cannon":"Cañón Dinamax","Dynamic Punch":"Puño Dinámico","Earth Power":"Tierra Viva","Earthquake":"Terremoto","Ember":"Ascuas","Energy Ball":"Energibola","Fairy Wind":"Viento Feérico","Fire Blast":"Llamarada","Fire Punch":"Puño Fuego","Flamethrower":"Lanzallamas","Flash Cannon":"Foco Resplandor","Fly":"Vuelo","Focus Blast":"Onda Certera","Foul Play":"Juego Sucio","Freeze Shock":"Rayo Gélido","Fury Cutter":"Corte Furia","Fusion Bolt":"Rayo Fusión","Fusion Flare":"Llama Fusión","Future Sight":"Premonición","Geomancy":"Geocontrol","Gigaton Hammer":"Martillo Colosal","Grass Knot":"Hierba Lazo","Hex":"Infortunio","High Horsepower":"Fuerza Equina","Hydro Cannon":"Hidrocañón","Ice Beam":"Rayo Hielo","Ice Burn":"Llama Gélida","Ice Fang":"Colmillo Hielo","Ice Punch":"Puño Hielo","Icicle Spear":"Carámbano","Icy Wind":"Viento Hielo","Incinerate":"Calcinación","Infestation":"Acoso","Iron Head":"Cabeza de Hierro","Last Resort":"Última Baza","Leaf Blade":"Hoja Aguda","Lock On":"Fijar Blanco","Low Kick":"Patada Baja","Luster Purge":"Resplandor","Metal Claw":"Garra Metal","Metal Sound":"Eco Metálico","Meteor Beam":"Rayo Meteórico","Meteor Mash":"Puño Meteoro","Mirror Coat":"Manto Espejo","Mist Ball":"Bola Neblina","Moonblast":"Fuerza Lunar","Moongeist Beam":"Rayo Umbrío","Mud Bomb":"Bomba Fango","Mud Shot":"Disparo Lodo","Mud Slap":"Bofetón Lodo","Mystical Fire":"Llama Embrujada","Night Shade":"Tinieblas","Night Slash":"Tajo Umbrío","Oblivion Wing":"Ala Mortífera","Origin Pulse":"Pulso Primigenio","Outrage":"Enfado","Payback":"Vendetta","Peck":"Picotazo","Play Rough":"Carantoña","Poison Jab":"Puya Nociva","Poison Sting":"Picotazo Veneno","Powder Snow":"Nieve Polvo","Power Gem":"Joya de Luz","Precipice Blades":"Filo del Abismo","Psybeam":"Psicorrayo","Psycho Boost":"Psicoataque","Psycho Cut":"Psicocorte","Psyshock":"Psicocarga","Psystrike":"Onda Mental","Psywave":"Psicoonda","Rage Fist":"Puño Furia","Roar of Time":"Distorsión","Rock Slide":"Avalancha","Rock Tomb":"Tumba Rocas","Rock Wrecker":"Romperrocas","Rollout":"Rodar","Sacred Fire":"Fuego Sagrado","Sacred Sword":"Espada Santa","Sand Attack":"Ataque Arena","Sand Tomb":"Bucle Arena","Sandsear Storm":"Simún de Arena","Scratch":"Arañazo","Secret Sword":"Sable Místico","Seed Bomb":"Bomba Germen","Shadow Ball":"Bola Sombra","Shadow Claw":"Garra Umbría","Shadow Force":"Golpe Umbrío","Shadow Punch":"Puño Sombra","Shadow Sneak":"Sombra Vil","Skull Bash":"Cabezazo","Sludge":"Residuos","Sludge Bomb":"Bomba Lodo","Sludge Wave":"Onda Tóxica","Snarl":"Alarido","Spacial Rend":"Corte Vacío","Sparkling Aria":"Aria Burbuja","Stone Edge":"Roca Afilada","Sucker Punch":"Golpe Bajo","Sunsteel Strike":"Meteoimpacto","Superpower":"Fuerza Bruta","Surf":"Surf","Thunder":"Trueno","Thunder Punch":"Puño Trueno","Thunder Shock":"Impactrueno","Thunderbolt":"Rayo","Torch Song":"Canto Ardiente","Trailblaze":"Abrecaminos","Twister":"Ciclón","Upper Hand":"Palma Rauda","Vise Grip":"Agarre","Volt Switch":"Voltiocambio","Water Pulse":"Hidropulso","Waterfall":"Cascada","Weather Ball":"Meteorobola","Wild Charge":"Voltio Cruel","Wing Attack":"Ataque Ala","Wrap":"Constricción","X-Scissor":"Tijera X",
+"Counter":"Contraataque","Razor Leaf":"Hoja Afilada","Vine Whip":"Látigo Cepa","Bullet Punch":"Puño Bala","Bullet Seed":"Semilladora","Charm":"Encanto","Spark":"Chispa","Water Gun":"Pistola Agua","Fire Spin":"Giro Fuego","Fire Fang":"Colmillo Ígneo","Lick":"Lengüetazo","Tackle":"Placaje","Quick Attack":"Ataque Rápido","Karate Chop":"Golpe Kárate","Rock Throw":"Lanzarrocas","Smack Down":"Antiaéreo","Gust":"Tornado","Leafage":"Follaje","Magical Leaf":"Hoja Mágica","Steel Wing":"Ala de Acero","Feint Attack":"Finta","Force Palm":"Palmeo","Rock Smash":"Golpe Roca","Hyper Beam":"Hiperrayo","Frenzy Plant":"Planta Feroz","Solar Beam":"Rayo Solar","Hydro Pump":"Hidrobomba","Scald":"Escaldar","Liquidation":"Hidroariete","Muddy Water":"Agua Lodosa","Night Slash ":"Tajo Umbrío","Leaf Storm":"Lluevehojas","Power Whip":"Latigazo","Dazzling Gleam":"Brillo Mágico","Heavy Slam":"Cuerpo Pesado","Cross Chop":"Tajo Cruzado","Power-Up Punch":"Puño Incremento","Psychic":"Psíquico","Zap Cannon":"Electrocañón","Swift":"Rapidez","Return":"Retribución","Frustration":"Frustración","Aerial Ace":"Golpe Aéreo","Sky Attack":"Ataque Aéreo","Hurricane":"Vendaval","Overheat":"Sofoco","Flame Charge":"Nitrocarga","Bubble Beam":"Rayo Burbuja","Poltergeist":"Poltergeist","Megahorn":"Megacuerno","Lunge":"Plancha","Bug Buzz":"Zumbido","Cross Poison":"Veneno X","Gunk Shot":"Lanza Mugre","Acid Spray":"Bomba Ácida","Scorching Sands":"Arenas Ardientes","Dig":"Excavar","Triple Axel":"Triple Axel","Zen Headbutt":"Cabezazo Zen","Psychic Fangs":"Psicocolmillo","Ominous Wind":"Viento Aciago","Silver Wind":"Viento Plata","Obstruct":"Obstrucción","Dragon Pulse":"Pulso Dragón"};
+const TIPO_ES = {normal:'Normal',fire:'Fuego',water:'Agua',electric:'Eléctrico',grass:'Planta',ice:'Hielo',fighting:'Lucha',poison:'Veneno',ground:'Tierra',flying:'Volador',psychic:'Psíquico',bug:'Bicho',rock:'Roca',ghost:'Fantasma',dragon:'Dragón',dark:'Siniestro',steel:'Acero',fairy:'Hada'};
+const FORMA_ES = {Galarian:'de Galar',Alolan:'de Alola',Hisuian:'de Hisui',Paldean:'de Paldea',Primal:'Primigenio',White:'Blanco',Black:'Negro',Origin:'(Origen)',Altered:'(Modificada)',Defense:'(Defensa)',Attack:'(Ataque)',Speed:'(Velocidad)',Busted:'(Descubierto)','Crowned Sword':'(Espada Suprema)','Crowned Shield':'(Escudo Supremo)','Complete Forme':'(Completo)',Resolute:'(Brío)',Ordinary:'(Habitual)',Therian:'(Tótem)',Incarnate:'(Avatar)','Dawn Wings':'(Alas del Alba)','Dusk Mane':'(Melena Crepuscular)',Snowy:'(Nieve)',Sunny:'(Sol)',Rainy:'(Lluvia)',Core:'(Núcleo)'};
+function esMovimiento(nombre){
+  const mas = /\+$/.test(nombre); let b = nombre.replace(/\+$/,'');
+  const wb = b.match(/^(.*) \((\w+)\)$/);
+  if(wb && MOV_ES[wb[1]]) return MOV_ES[wb[1]] + ' (' + (TIPO_ES[wb[2].toLowerCase()]||wb[2]) + ')' + (mas?'+':'');
+  return (MOV_ES[b]||b) + (mas?'+':'');
+}
+function esNombre(nombre){
+  let n = nombre, osc = false;
+  if(/ \(Shadow\)/.test(n)){ osc = true; n = n.replace(' (Shadow)',''); }
+  const m = n.match(/^(.*?) \((.+)\)$/);
+  if(m){
+    const base = m[1], f = m[2];
+    if(/^Mega/.test(f)) n = 'Mega-' + base + f.replace('Mega','');
+    else if(FORMA_ES[f]) n = base + ' ' + FORMA_ES[f];
+  }
+  return n + (osc ? ' (Oscuro)' : '');
+}
+function indiceGM(gm){
+  const P = {}, M = {};
+  for(const p of gm.pokemon) P[p.speciesId] = p;
+  for(const m of gm.moves) M[m.moveId] = m;
+  return {P, M, fecha:(gm.timestamp||'').slice(0,10)};
+}
+function convertirLiga(ranking, ix, cp, cuantos, movs){
+  const out = [];
+  const ref = o => { const p = ix.P[o.opponent]; return [o.opponent, p ? esNombre(p.speciesName) : o.opponent, o.rating]; };
+  for(const x of ranking.slice(0, cuantos||40)){
+    const p = ix.P[x.speciesId]; if(!p) continue;
+    const tags = p.tags||[];
+    const iv = (p.defaultIVs||{})['cp'+cp];
+    const fl = {};
+    if(tags.includes('shadow')) fl.sh = 1;
+    if(tags.includes('mega')) fl.mega = 1;
+    if(tags.some(t => ['legendary','mythical','ultrabeast'].includes(t))) fl.leg = 1;
+    if(cp < 10000 && iv && iv[0] > 40) fl.xl = 1;
+    const el = (x.moveset||[]).filter(m => (p.eliteMoves||[]).includes(m)); if(el.length) fl.el = el;
+    for(const id of x.moveset){
+      const m = ix.M[id]; if(!m || movs[id]) continue;
+      const o = {n:esMovimiento(m.name), en:m.name, t:m.type, p:m.power, e:m.energy, g:m.energyGain, tu:m.turns || Math.round((m.cooldown||500)/500)};
+      if(m.buffs){ o.b = m.buffs; o.bt = m.buffTarget; o.bc = +m.buffApplyChance; }
+      movs[id] = o;
+    }
+    /* Línea evolutiva: de la forma base a la anterior a esta (para saber cuál capturar). */
+    const ev = []; let cur = p, tope = 0;
+    while(cur.family && cur.family.parent && ix.P[cur.family.parent] && tope++ < 4){ cur = ix.P[cur.family.parent]; ev.unshift(esNombre(cur.speciesName)); }
+    if(fl.mega) ev.push(p.speciesName.replace(/ \((Mega.*|Primal)\)$/, ''));
+    const s = x.scores||[];
+    out.push({id:x.speciesId, n:esNombre(x.speciesName), d:p.dex, t:p.types.filter(t=>t&&t!=='none'), sc:x.score,
+      r:[s[0]||0, s[1]||0, s[2]||0], f:x.moveset[0], c:x.moveset.slice(1),
+      w:(x.matchups||[]).map(ref), l:(x.counters||[]).map(ref), fl, ev});
+  }
+  return out;
+}
+//</CONVERTIDOR>
+
+/* ───────── Estado y almacenamiento ───────── */
+const LS = 'teamgo.v1', LSD = 'teamgo.datos';
+let st = {liga:null, tema:null, mis:{}, eq:{}, inclQuiero:false};
+let fil = {q:'', tipo:'', tengo:false, quiero:false};
+let DATOS = DATOS_INCLUIDOS, datosPropios = false;
+try{ Object.assign(st, JSON.parse(localStorage.getItem(LS)) || {}); }catch(e){}
+try{ const d = JSON.parse(localStorage.getItem(LSD)); if(d && d.ligas){ DATOS = d; datosPropios = true; } }catch(e){}
+function guardar(){ st.ts = Date.now(); try{ localStorage.setItem(LS, JSON.stringify(st)); }catch(e){} subir(); }
+
+/* Copia en tu cuenta de Claude. Solo existe en la versión publicada: ahí «Mis Pokémon» y el
+   equipo se guardan también fuera del navegador, así no se pierden al borrar datos de Chrome
+   ni al cambiar de dispositivo. En el archivo local se usa solo localStorage. */
+let nube = null, nubeT = null, nubeOcupada = false, nubeUlt = '';
+const paraNube = () => ({liga:st.liga, tema:st.tema || '', mis:st.mis, eq:st.eq, inclQuiero:!!st.inclQuiero, ts:st.ts || 0});
+function estadoGuardado(){ const el = document.getElementById('estGuard'); if(el) el.textContent = nube ? 'Tu selección se guarda en tu cuenta de Claude.' : 'Tu selección se guarda en este navegador.'; }
+async function subirYa(){
+  clearTimeout(nubeT);
+  if(!nube) return;
+  if(nubeOcupada){ nubeT = setTimeout(subirYa, 600); return; }
+  const d = JSON.parse(JSON.stringify(paraNube())), firma = JSON.stringify(Object.assign({}, d, {ts:0}));
+  if(firma === nubeUlt) return;
+  nubeOcupada = true;
+  try{ await nube.set(d); nubeUlt = firma; }
+  catch(e){ if(e && (e.code === 'invalid_argument' || e.code === 'revoked' || e.code === 'not_granted')){ nube = null; estadoGuardado(); } }
+  nubeOcupada = false;
+}
+function subir(){ if(!nube) return; clearTimeout(nubeT); nubeT = setTimeout(subirYa, 700); }
+async function conectarNube(){
+  try{
+    if(!window.claude || !window.claude.use) return;
+    const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+    if(!db || !user) return;
+    const id = await user.id(); if(!id) return;
+    const ref = db.doc('data/users/' + id + '/estado');
+    const snap = await ref.get();
+    if(snap.exists){
+      const d = JSON.parse(JSON.stringify(snap.data()));
+      if((d.ts || 0) >= (st.ts || 0)){
+        st.mis = d.mis || {}; st.eq = d.eq || {}; st.inclQuiero = !!d.inclQuiero; st.ts = d.ts || 0;
+        if(d.liga && DATOS.ligas[d.liga]) st.liga = d.liga;
+        if(d.tema){ st.tema = d.tema; document.documentElement.dataset.theme = d.tema; }
+        try{ localStorage.setItem(LS, JSON.stringify(st)); }catch(e){}
+        nubeUlt = JSON.stringify(Object.assign({}, paraNube(), {ts:0}));
+        memoS = {}; pintarTema(); pintar();
+      }
+    }
+    nube = ref; estadoGuardado(); subirYa();
+  }catch(e){}
+}
+document.addEventListener('visibilitychange', () => { if(document.hidden) subirYa(); });
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt = (x, d=0) => x.toFixed(d).replace('.', ',');
+const lista = a => a.length < 2 ? (a[0]||'') : a.slice(0,-1).join(', ') + ' y ' + a[a.length-1];
+const MV = id => DATOS.moves[id] || {n:id, en:id, t:'normal', p:0, e:50, g:0, tu:1};
+const chip = t => `<span class="tp${TIPOS[t].o?' osc':''}" style="--tc:${TIPOS[t].c}">${TIPOS[t].n}</span>`;
+const chips = ts => `<span class="chips">${ts.map(chip).join('')}</span>`;
+const liga = () => LIGAS.find(l => l.id === st.liga) || LIGAS[0];
+const pokes = () => (DATOS.ligas[st.liga] || []);
+const porId = id => pokes().find(p => p.id === id);
+const mis = () => (st.mis[st.liga] = st.mis[st.liga] || {t:{}, q:{}});
+const tengo = id => !!mis().t[id], quiero = id => !!mis().q[id];
+function toast(t){ const el = $('#toast'); el.textContent = t; el.classList.add('v'); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove('v'), 2600); }
+
+/* ───────── Calendario ───────── */
+function estadoLiga(id, ahora){
+  const sem = CALENDARIO.filter(s => s.ligas.includes(id)).map(s => ({i:+new Date(s.ini), f:+new Date(s.fin)})).sort((a,b) => a.i-b.i);
+  let act = sem.find(s => s.i <= ahora && ahora < s.f);
+  if(act){ let fin = act.f; for(const s of sem) if(s.i === fin) fin = s.f; return {k:'on', t:fin}; }
+  const prox = sem.find(s => s.i > ahora);
+  return prox ? {k:'prox', t:prox.i} : {k:'off'};
+}
+const fFecha = t => new Date(t).toLocaleDateString('es-ES',{weekday:'short', day:'numeric', month:'short'}) + ', ' + new Date(t).toLocaleTimeString('es-ES',{hour:'2-digit', minute:'2-digit'});
+
+/* ───────── Motor: enfrentamientos y equipos ───────── */
+function dano(a, b){
+  const ef = id => { const m = MV(id); return mult(m.t, b.t) * (a.t.includes(m.t) ? 1.2 : 1); };
+  return 0.4*ef(a.f) + 0.6*Math.max(...a.c.map(ef));
+}
+/* Estimación de a contra b en [-1, 1]. Usa el resultado simulado de PvPoke cuando existe
+   (campos w / l) y, si no, una aproximación por tipos y movimientos. */
+function est(a, b){
+  if(a.id === b.id) return 0;
+  let v = null, x;
+  if((x = a.w.find(o => o[0] === b.id))) v = (x[2]-500)/500*1.5;
+  else if((x = a.l.find(o => o[0] === b.id))) v = (x[2]-500)/500*1.5;
+  else if((x = b.w.find(o => o[0] === a.id))) v = -(x[2]-500)/500*1.5;
+  else if((x = b.l.find(o => o[0] === a.id))) v = -(x[2]-500)/500*1.5;
+  if(v === null) v = Math.log2(dano(a,b)/dano(b,a))/2 + (a.sc-b.sc)/60;
+  return Math.max(-1, Math.min(1, v));
+}
+let cacheM = {};
+function matriz(){
+  const k = st.liga + '|' + DATOS.fecha;
+  if(cacheM.k === k) return cacheM.m;
+  const P = pokes(), m = {};
+  for(const a of P){ m[a.id] = {}; for(const b of P) m[a.id][b.id] = est(a,b); }
+  cacheM = {k, m}; return m;
+}
+function debiles(p){ return LT.filter(t => mult(t, p.t) > 1); }
+function resiste(p){ return LT.filter(t => mult(t, p.t) < 1); }
+function ordenar(team){
+  let mejor = null;
+  const per = [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
+  for(const [a,b,c] of per){
+    const v = team[a].r[0] + team[b].r[2] + team[c].r[1];
+    if(!mejor || v > mejor.v) mejor = {v, o:[team[a], team[b], team[c]]};
+  }
+  return mejor;
+}
+function valido(team){
+  const dex = new Set(team.map(p => p.d));
+  return dex.size === team.length && team.filter(p => p.fl.mega).length <= 1;
+}
+function evaluar(team){
+  const P = pokes(), M = matriz();
+  let sw = 0, cal = 0, cub = 0; const sin = [], resp = {};
+  P.forEach((r, i) => {
+    const w = 1 + (P.length - i)/P.length;
+    let best = -2, quien = null;
+    for(const p of team){ const v = M[p.id][r.id]; if(v > best){ best = v; quien = p; } }
+    resp[r.id] = {v:best, p:quien};
+    sw += w; cal += w*Math.max(0, Math.min(1, (best+0.6)/1.2));
+    if(best > 0.05) cub += w; else if(best < -0.1) sin.push(r);
+  });
+  const comp = LT.filter(t => team.filter(p => mult(t, p.t) > 1).length >= 2);
+  const triple = LT.filter(t => team.every(p => mult(t, p.t) > 1));
+  const ord = ordenar(team);
+  const media = team.reduce((s,p) => s+p.sc, 0)/team.length;
+  const score = 55*cal/sw + 0.27*media + 0.10*ord.v/3 - 2.5*comp.length - 3*triple.length - 0.8*sin.length;
+  return {team, score, cob:100*cub/sw, sin, resp, comp, orden:ord.o};
+}
+function mejores(pool, fijos, k){
+  fijos = fijos || []; const res = [];
+  const libres = pool.filter(p => !fijos.includes(p)), falta = 3 - fijos.length;
+  const prueba = extra => { const t = fijos.concat(extra); if(valido(t)) res.push(evaluar(t)); };
+  if(falta <= 0) prueba([]);
+  else if(falta === 1) for(const a of libres) prueba([a]);
+  else if(falta === 2) for(let i=0;i<libres.length;i++) for(let j=i+1;j<libres.length;j++) prueba([libres[i], libres[j]]);
+  else for(let i=0;i<libres.length;i++) for(let j=i+1;j<libres.length;j++) for(let l=j+1;l<libres.length;l++) prueba([libres[i], libres[j], libres[l]]);
+  return res.sort((a,b) => b.score-a.score).slice(0, k||5);
+}
+function reserva(){
+  return pokes().filter(p => tengo(p.id) || (st.inclQuiero && quiero(p.id)));
+}
+/* Equipo que se muestra: el manual si está completo; si no, el mejor automático.
+   Con menos de 3 marcados enseña un ejemplo con todo el meta. */
+let memoS = {};
+function situacion(){
+  const k = JSON.stringify([st.liga, DATOS.fecha, st.mis[st.liga], st.eq[st.liga], st.inclQuiero]);
+  if(memoS.k !== k) memoS = {k, v:situacion0()};
+  return memoS.v;
+}
+function situacion0(){
+  const manual = (st.eq[st.liga] || []).map(porId).filter(Boolean);
+  const pool = reserva();
+  if(manual.length === 3) return {modo:'manual', manual, ev:evaluar(manual), pool};
+  if(manual.length > 0) return {modo:'parcial', manual, ev:null, pool};
+  if(pool.length >= 3){ const m = mejores(pool, [], 4); if(m.length) return {modo:'auto', manual, ev:m[0], alt:m.slice(1), pool}; }
+  const m = mejores(pokes().slice(0, 28), [], 1);
+  return {modo:'ejemplo', manual, ev:m[0] || null, pool};
+}
+function fichajes(ev, pool){
+  if(pool.length < 2) return [];
+  const out = [];
+  for(const c of pokes()){
+    if(pool.includes(c)) continue;
+    const m = mejores(pool.concat([c]), [c], 1)[0];
+    if(m && m.score > ev.score + 0.3) out.push({p:c, d:m.score-ev.score, ev:m});
+  }
+  return out.sort((a,b) => (quiero(b.p.id)-quiero(a.p.id)) || b.d-a.d).slice(0,3);
+}
+
+/* ───────── Textos derivados ───────── */
+const ROL = ['Lead','Closer','Safe Switch'];
+function roles(p){
+  const mx = Math.max(...p.r), i = p.r.indexOf(mx);
+  const sec = p.r.map((v,j) => j !== i && mx - v < 1.5 ? ROL[j] : null).filter(Boolean);
+  return [ROL[i]].concat(sec.slice(0,1));
+}
+function prioridad(p, i){
+  const niv = i < 10 ? ['Imprescindible','p0'] : i < 24 ? ['Prioridad alta','p1'] : ['Prioridad media',''];
+  const notas = [];
+  if(p.fl.xl) notas.push('pide Caramelos XL');
+  if(p.fl.el) notas.push('necesita MT Élite');
+  if(p.fl.leg) notas.push('legendario o mítico');
+  if(p.fl.mega) notas.push('megaevolución');
+  return {t:niv[0], c:niv[1], notas};
+}
+const nMov = (p, id) => esc(MV(id).n) + (p.fl.el && p.fl.el.includes(id) ? '*' : '');
+const cuenta = (p, id) => { const g = MV(p.f).g || 1; return Math.ceil(MV(id).e / g); };
+function mejorCargado(p, rival){
+  let b = null;
+  for(const id of p.c){ const m = MV(id), ef = mult(m.t, rival.t), v = ef*(p.t.includes(m.t)?1.2:1)*m.p/Math.max(m.e,1); if(!b || v > b.v) b = {id, v, ef}; }
+  return b;
+}
+function txtBuff(m){
+  if(!m.b) return '';
+  const [a, d] = m.b, prob = m.bc && m.bc < 1 ? ` (${Math.round(m.bc*100)} % de las veces)` : '';
+  const que = [a ? 'Ataque' : null, d ? 'Defensa' : null].filter(Boolean).join(' y ');
+  const sube = (a||d) > 0;
+  if(m.bt === 'self') return sube ? `Sube tu ${que}${prob}.` : `Te baja ${que}${prob}: lánzalo para rematar o justo antes de cambiar.`;
+  if(m.bt === 'opponent') return `Baja ${que} del rival${prob}.`;
+  return '';
+}
+
+/* ───────── Render: ligas ───────── */
+function pintarLigas(){
+  const ahora = Date.now();
+  const ord = {on:0, prox:1, off:2};
+  const ls = LIGAS.filter(l => DATOS.ligas[l.id]).map(l => ({l, e:estadoLiga(l.id, ahora)})).sort((a,b) => ord[a.e.k]-ord[b.e.k] || (a.e.t||0)-(b.e.t||0));
+  $('#ligas').innerHTML = ls.map(({l,e}) => `
+    <button class="liga" type="button" data-liga="${l.id}" aria-pressed="${l.id===st.liga}" style="--c:${l.c};--ct:${l.ct}">
+      <b>${esc(l.n)}</b><small>${esc(l.es)} · ${l.cp<10000 ? l.cp+' PC' : 'sin límite'}</small>
+      <span class="est ${e.k}">${e.k==='on' ? 'Activa hasta '+fFecha(e.t) : e.k==='prox' ? 'Empieza '+fFecha(e.t) : 'Fuera de rotación'}</span>
+    </button>`).join('');
+  const fin = Math.max(...CALENDARIO.map(s => +new Date(s.fin)));
+  const sem = CALENDARIO.find(s => +new Date(s.ini) <= ahora && ahora < +new Date(s.fin));
+  let av = '';
+  if(ahora > fin) av = `<div class="aviso">El calendario incluido terminó el ${fFecha(fin)}. Actualiza el bloque CALENDARIO del código para ver las ligas de esta semana.</div>`;
+  else if(sem && sem.otras) av = `<div class="aviso">Esta semana también está activa: ${esc(sem.otras.join(', '))}. No tiene ranking propio; usa Great League como referencia.</div>`;
+  $('#avisoCal').innerHTML = av;
+  const L = liga();
+  $('#reglas').innerHTML = `<b style="color:var(--tinta)">${esc(L.n)}.</b> ${esc(L.reglas)} Meta de PvPoke del ${esc(DATOS.fecha.split('-').reverse().join('/'))}${datosPropios ? ' (actualizado por ti)' : ''}. <span id="estGuard"></span>`;
+  estadoGuardado();
+  document.documentElement.style.setProperty('--liga', L.c);
+  document.documentElement.style.setProperty('--liga-tinta', L.ct);
+  $('#cMis').textContent = Object.keys(mis().t).length + ' tengo';
+}
+
+/* ───────── Render: tarjeta ───────── */
+function tarjeta(p, i){
+  const pr = prioridad(p, i), t2 = p.t[1] || p.t[0];
+  const enEq = (st.eq[st.liga]||[]).includes(p.id);
+  return `<article class="pk" style="--t1:${TIPOS[p.t[0]].c};--t2:${TIPOS[t2].c}">
+    <div class="rk">${i+1}</div>
+    <div>
+      <div class="cabp"><h3>${esc(p.n)}</h3>${chips(p.t)}<span class="pts" title="Puntuación PvPoke">${fmt(p.sc,1)}</span></div>
+      <div class="meta">${roles(p).map(r => `<span class="pil rol">${r}</span>`).join('')}<span class="pil ${pr.c}">${pr.t}</span>${pr.notas.map(n => `<span class="pil nota">${n}</span>`).join('')}</div>
+      <div class="evo">${p.ev && p.ev.length ? `<small>${p.fl.mega ? 'Megaevoluciona desde' : 'Busca'}</small> ${p.ev.map(n => `<b>${esc(n)}</b>`).join(' → ')}${p.fl.mega ? '' : ' → ' + esc(p.n)}` : `<small>Sin preevolución</small> se consigue tal cual`}
+        <a href="https://www.pokemon.com/es/pokedex/${p.d}" target="_blank" rel="noopener">N.º ${p.d} · ver en la Pokédex ↗</a></div>
+      <div class="mov"><small>Rápido</small> <b>${nMov(p,p.f)}</b> · <small>Cargados</small> <b>${p.c.map(c => nMov(p,c)).join('</b> y <b>')}</b></div>
+    </div>
+    <div class="acc">
+      <button class="bt" type="button" data-act="tengo" data-id="${p.id}" aria-pressed="${tengo(p.id)}">${tengo(p.id) ? '✓ Lo tengo' : 'Tengo'}</button>
+      <button class="bt q" type="button" data-act="quiero" data-id="${p.id}" aria-pressed="${quiero(p.id)}">${quiero(p.id) ? '★ Lo quiero' : 'Quiero'}</button>
+      <button class="bt eq" type="button" data-act="${enEq?'quitar':'poner'}" data-id="${p.id}" aria-label="${enEq?'Quitar del equipo':'Añadir al equipo'}">${enEq ? '− Equipo' : '+ Equipo'}</button>
+    </div>
+  </article>`;
+}
+function filtrados(){
+  const q = fil.q.trim().toLowerCase();
+  return pokes().map((p,i) => ({p,i})).filter(({p}) =>
+    (!q || p.n.toLowerCase().includes(q)) && (!fil.tipo || p.t.includes(fil.tipo)) && (!fil.tengo || tengo(p.id)) && (!fil.quiero || quiero(p.id)));
+}
+function vistaMeta(){
+  return `<h2>Meta de ${esc(liga().n)}</h2>
+  <p class="sub">Los ${pokes().length} mejores según PvPoke. Marca «Tengo» en los tuyos y «Quiero» en los que vas a preparar. «Busca» indica qué preevolución capturar. El asterisco (*) indica un ataque que pide MT Élite.</p>
+  <div class="filtros">
+    <input type="search" id="fQ" placeholder="Buscar por nombre" value="${esc(fil.q)}" aria-label="Buscar por nombre">
+    <select id="fTipo" aria-label="Filtrar por tipo"><option value="">Todos los tipos</option>${LT.map(t => `<option value="${t}"${fil.tipo===t?' selected':''}>${TIPOS[t].n}</option>`).join('')}</select>
+    <label class="conm"><input type="checkbox" id="fTengo"${fil.tengo?' checked':''}> Solo los que tengo</label>
+    <label class="conm"><input type="checkbox" id="fQuiero"${fil.quiero?' checked':''}> Solo los que quiero</label>
+  </div>
+  <div class="lista" id="lista">${listaHTML()}</div>`;
+}
+function listaHTML(){
+  const f = filtrados();
+  return f.length ? f.map(({p,i}) => tarjeta(p,i)).join('') : `<div class="vacio">Ningún Pokémon coincide con el filtro.</div>`;
+}
+function vistaMis(){
+  const P = pokes().map((p,i) => ({p,i}));
+  const t = P.filter(x => tengo(x.p.id)), q = P.filter(x => quiero(x.p.id) && !tengo(x.p.id));
+  return `<h2>Mis Pokémon</h2>
+  <p class="sub">Tu selección para ${esc(liga().n)}. Se guarda en este navegador y cada liga tiene la suya, porque un Pokémon preparado para 1500 PC no sirve en otra.</p>
+  <div class="caja"><h3>Los tengo <small>${t.length}</small></h3>
+    <div class="lista">${t.length ? t.map(x => tarjeta(x.p,x.i)).join('') : `<div class="vacio">Todavía no has marcado ninguno. Ve a Meta y pulsa «Tengo».</div>`}</div></div>
+  <div class="caja"><h3>Quiero conseguirlos <small>${q.length}</small></h3>
+    <div class="lista">${q.length ? q.map(x => tarjeta(x.p,x.i)).join('') : `<div class="vacio">Marca «Quiero» en los que vayas a subir o capturar.</div>`}</div></div>
+  ${t.length+q.length ? `<div class="fila"><button class="bs" type="button" data-act="vaciar">Vaciar mi selección de esta liga</button></div>` : ''}`;
+}
+
+/* ───────── Render: equipo ───────── */
+function cobertura(team){
+  const def = LT.map(t => {
+    const d = team.filter(p => mult(t, p.t) > 1).length, r = team.filter(p => mult(t, p.t) < 1).length;
+    const k = d >= 2 || (d >= 1 && r === 0) ? 'ko' : (r >= 1 && r > d) ? 'ok' : '';
+    return {t, d, r, k};
+  });
+  const ofe = LT.filter(t => team.some(p => [p.f].concat(p.c).some(id => mult(MV(id).t, [t]) > 1)));
+  return {def, ofe, sinOfe:LT.filter(t => !ofe.includes(t))};
+}
+function vistaEquipo(){
+  const s = situacion(), ev = s.ev, ord = ev ? ev.orden : s.manual;
+  const papeles = ['Lead','Switch','Closer'];
+  const slots = [0,1,2].map(i => {
+    const p = ord[i];
+    return p ? `<button class="slot lleno" type="button" data-act="quitar" data-id="${p.id}" style="--t1:${TIPOS[p.t[0]].c}" data-slot="${i}">
+        <span class="papel">${ev ? papeles[i] : 'Elegido'}</span><b>${esc(p.n)}</b>${chips(p.t)}<span class="x">${s.modo==='manual'||s.modo==='parcial' ? 'Toca para quitar' : 'Toca para cambiarlo'}</span></button>`
+      : `<div class="slot" data-slot="${i}"><span class="papel">Hueco ${i+1}</span><span class="x">Arrastra o toca un Pokémon de abajo</span></div>`;
+  }).join('');
+  const titulo = {manual:'Tu equipo', parcial:'Tu equipo, a medias', auto:'Mejor equipo con los que tienes', ejemplo:'Equipo de ejemplo'}[s.modo];
+  let h = `<h2>Constructor</h2>
+  <p class="sub">${s.modo==='ejemplo' ? `<span class="ejemplo">Ejemplo con todo el meta.</span> Marca al menos 3 Pokémon como «Tengo» y aquí verás el mejor equipo que puedes formar.` : 'La app ordena sola a los tres: Lead, Switch y Closer.'}</p>
+  <div class="caja"><h3>${titulo}</h3>
+    <div class="slots" id="slots">${slots}</div>
+    <div class="fila">
+      <button class="bp" type="button" data-act="auto">${s.modo==='parcial' ? 'Completar con el mejor compañero' : 'Proponer el mejor equipo'}</button>
+      ${s.manual.length ? `<button class="bs" type="button" data-act="limpiar">Vaciar equipo</button>` : ''}
+    </div>
+    <label class="conm" style="margin-top:8px"><input type="checkbox" id="cQuiero"${st.inclQuiero?' checked':''}> Contar también con los que quiero conseguir</label>
+  </div>`;
+
+  const band = pokes().filter(p => tengo(p.id) || quiero(p.id));
+  h += `<div class="caja"><h3>Tus Pokémon <small>toca o arrastra al equipo</small></h3>
+    ${band.length ? `<div class="bandeja">${band.map(p => `<button class="ficha${tengo(p.id)?'':' q'}" type="button" draggable="true" data-act="poner" data-id="${p.id}" style="--t1:${TIPOS[p.t[0]].c}"${ord.includes(p)&&s.manual.includes(p)?' disabled':''}>${esc(p.n)}${tengo(p.id)?'':' ★'}</button>`).join('')}</div><p class="ley">Borde discontinuo y ★: todavía no lo tienes.</p>`
+      : `<div class="vacio">Aún no has marcado ninguno. <a href="#meta">Ir al meta</a></div>`}
+  </div>`;
+
+  if(ev){
+    const c = cobertura(ev.team);
+    h += `<div class="caja"><h3>Cobertura del meta</h3>
+      <div class="marc"><div class="num">${fmt(ev.cob)} %</div>
+      <p>Parte del top ${pokes().length} (ponderado por ranking) contra la que al menos uno de los tres sale con ventaja. Es una estimación a partir de los enfrentamientos de PvPoke y de los tipos, no una simulación completa.</p></div>
+      <div class="barra"><i style="width:${ev.cob}%"></i></div>
+      ${ev.sin.length ? `<p class="ley"><span class="ko-t">Sin respuesta clara:</span> ${esc(lista(ev.sin.slice(0,6).map(p => p.n)))}.</p>` : `<p class="ley"><span class="ok-t">Tienes respuesta para todo el top.</span></p>`}
+    </div>
+    <div class="caja"><h3>Defensa por tipo <small>qué aguantas y qué te duele</small></h3>
+      <div class="cob">${c.def.map(x => `<div class="cb ${x.k}">${chip(x.t)}<span class="e">${x.k==='ko'?'Débil':x.k==='ok'?'Cubierto':'Neutro'} · ${x.r} res. / ${x.d} déb.</span></div>`).join('')}</div>
+      <p class="ley">«Cubierto»: más miembros lo resisten que los que lo sufren. «Débil»: dos o más lo sufren, o uno y nadie lo resiste.</p>
+    </div>
+    <div class="caja"><h3>Ataque por tipo</h3>
+      <p class="ley" style="margin:0 0 6px">Pegas súper eficaz a:</p>${chips(c.ofe)}
+      ${c.sinOfe.length ? `<p class="ley">No tienes golpe súper eficaz contra:</p>${chips(c.sinOfe)}` : ''}
+    </div>`;
+    if(s.alt && s.alt.length) h += `<div class="caja"><h3>Alternativas</h3><div class="alt">${s.alt.map(a => `<button type="button" data-act="usar" data-ids="${a.orden.map(p=>p.id).join(',')}"><span>${esc(a.orden.map(p => p.n).join(' · '))}</span><b>${fmt(a.cob)} %</b></button>`).join('')}</div></div>`;
+    h += `<div class="fila"><a class="bp" href="#guia" style="display:flex;align-items:center;justify-content:center;text-decoration:none">Ver la guía de este equipo</a></div>`;
+  } else {
+    h += `<div class="vacio">Elige ${3 - s.manual.length} más o pulsa «Completar con el mejor compañero».</div>`;
+  }
+  return h;
+}
+
+/* ───────── Render: guía ───────── */
+function vistaGuia(){
+  const s = situacion(), ev = s.ev;
+  if(!ev) return `<h2>Guía de juego</h2><div class="vacio">Completa el equipo de tres para generar la guía. <a href="#equipo">Ir al constructor</a></div>`;
+  const [L, S, C] = ev.orden, M = matriz(), P = pokes(), team = ev.orden;
+  const max = k => Math.max(...team.map(p => p.r[k]));
+  const ganaA = p => P.filter(r => !team.includes(r) && M[p.id][r.id] > 0.25).slice(0,3).map(r => r.n);
+  const pierde = p => P.filter(r => !team.includes(r) && M[p.id][r.id] < -0.25).slice(0,4);
+  const relevo = (p, tipoOrival) => {
+    const otros = team.filter(x => x !== p);
+    const v = x => typeof tipoOrival === 'string' ? -mult(tipoOrival, x.t) : M[x.id][tipoOrival.id];
+    return otros.sort((a,b) => v(b)-v(a))[0];
+  };
+
+  let h = `<h2>Guía de juego</h2>
+  <p class="sub">${s.modo==='ejemplo' ? '<span class="ejemplo">Equipo de ejemplo.</span> ' : ''}${esc(team.map(p => p.n).join(' · '))} en ${esc(liga().n)}. Cobertura estimada del meta: ${fmt(ev.cob)} %.</p><div class="guia">`;
+
+  /* 1. Orden */
+  const gL = ganaA(L), gS = ganaA(S), gC = ganaA(C);
+  h += `<div class="caja"><h3>1. Orden de entrada</h3>
+    <div class="paso"><span class="papel">Lead</span><h4>${esc(L.n)}</h4><p>Sale primero: ${fmt(L.r[0],1)} puntos como lead en PvPoke${L.r[0]===max(0)?', la nota más alta de los tres':''}. ${gL.length ? `De salida gana a ${esc(lista(gL))}.` : 'No domina la salida, así que juégalo para ganar energía y cambiar bien.'}</p></div>
+    <div class="paso"><span class="papel">Switch</span><h4>${esc(S.n)}</h4><p>Es tu cambio seguro (${fmt(S.r[2],1)} como switch). Entra cuando el lead sale mal y obliga al rival a responder${gS.length ? `; aguanta bien a ${esc(lista(gS))}` : ''}.</p></div>
+    <div class="paso"><span class="papel">Closer</span><h4>${esc(C.n)}</h4><p>Cierra la partida (${fmt(C.r[1],1)} como closer). Rinde más cuando ya no quedan escudos${gC.length ? ` y remata a ${esc(lista(gC))}` : ''}. Intenta que llegue con vida y energía.</p></div>
+  </div>`;
+
+  /* 2. Lead */
+  const dL = debiles(L), bien = LT.filter(t => !dL.includes(t) && (mult(t, L.t) < 1 || [L.f].concat(L.c).some(id => mult(MV(id).t,[t]) > 1) && mult(t, L.t) <= 1));
+  h += `<div class="caja"><h3>2. El lead: cuándo quedarse y cuándo cambiar</h3>
+    <p><b>Deja a ${esc(L.n)}</b> contra estos tipos, porque los resiste o les pega súper eficaz:</p>${chips(bien.slice(0,10))}
+    <p style="margin-top:10px"><b>Cambia</b> si el rival abre con:</p>
+    <ul>${dL.length ? dL.map(t => { const r = relevo(L, t); const m = mult(t, r.t); return `<li>${chip(t)} → entra <b>${esc(r.n)}</b>${m < 1 ? ', que lo resiste' : m > 1 ? ' (también lo sufre: cambia solo si llevas ventaja de energía)' : ', que lo recibe neutro'}.</li>`; }).join('') : '<li>No tiene debilidades de tipo: cambia solo si pierdes la carrera de energía.</li>'}</ul>
+    <p style="margin-top:10px">Cambia pronto, en los primeros ataques rápidos. Si esperas, regalas energía y vida. Si el rival cambia primero, quédate y aprovecha para cargar.</p>
+  </div>`;
+
+  /* 3. Matchups clave */
+  const claves = P.filter(r => !team.includes(r)).slice(0,10);
+  for(const r of ev.sin) if(!claves.includes(r) && claves.length < 13) claves.push(r);
+  h += `<div class="caja"><h3>3. Matchups clave</h3><ul>${claves.map(r => {
+    const x = ev.resp[r.id], p = x.p, mc = mejorCargado(p, r);
+    const peor = team.slice().sort((a,b) => M[a.id][r.id]-M[b.id][r.id])[0];
+    const evita = peor !== p && M[peor.id][r.id] < -0.35 ? ` No le dejes delante a ${esc(peor.n)}.` : '';
+    if(x.v < -0.1) return `<li>Si ves <b>${esc(r.n)}</b> ${chips(r.t)}: <span class="ko-t">no tienes respuesta clara.</span> Tu mejor opción es <b>${esc(p.n)}</b> con <b>${nMov(p,mc.id)}</b> y un escudo guardado.${evita}</li>`;
+    return `<li>Si ves <b>${esc(r.n)}</b> ${chips(r.t)}: pon a <b>${esc(p.n)}</b> y usa <b>${nMov(p,mc.id)}</b>${mc.ef > 1 ? ' (súper eficaz)' : mc.ef < 1 ? ' (poco eficaz, pero es lo mejor que tiene)' : ''}.${evita}</li>`;
+  }).join('')}</ul></div>`;
+
+  /* 4. Retirar */
+  h += `<div class="caja"><h3>4. Cuándo retirar a cada uno</h3><ul>${team.map(p => {
+    const d = debiles(p), pr = pierde(p);
+    const r = pr.length ? relevo(p, pr[0]) : (d.length ? relevo(p, d[0]) : null);
+    return `<li><b>Saca a ${esc(p.n)}</b> ${d.length ? `si ves ${d.map(chip).join(' ')}` : 'solo si va perdiendo la carrera de energía'}${pr.length ? `, sobre todo ante ${esc(lista(pr.map(x => x.n)))}` : ''}.${r ? ` Relevo: <b>${esc(r.n)}</b>.` : ''}</li>`;
+  }).join('')}</ul>
+  <p style="margin-top:10px">Antes de retirarlo, mira su energía: si le falta un ataque rápido para el cargado, lánzalo y cambia después. No cambies cuando el rival tenga un cargado listo; se lo come el que entra.</p></div>`;
+
+  /* 5. Movimientos y escudos */
+  const escudo = ['Gasta un escudo pronto solo si ganar la salida te da el control del cambio. Si el enfrentamiento es malo, no lo protejas: cambia.',
+    'Puede gastar un escudo para mantener la ventaja al entrar. Si el rival responde con su counter, deja que absorba daño y guarda los escudos.',
+    'Guárdale al menos un escudo si puedes. En el uno contra uno final, protege siempre el primer cargado caro.'];
+  h += `<div class="caja"><h3>5. Movimientos y escudos</h3>${team.map((p,i) => {
+    const f = MV(p.f), cs = p.c.map(id => ({id, m:MV(id), n:cuenta(p,id)})).sort((a,b) => a.m.e-b.m.e);
+    const cebo = cs.length > 1 && cs[1].m.e - cs[0].m.e >= 10 ? `Usa <b>${nMov(p,cs[0].id)}</b> para forzar escudos y guarda <b>${nMov(p,cs[1].id)}</b> para cuando el rival ya no tenga.` : cs.length > 1 ? `Los dos cargados cuestan parecido: elige por tipo según el rival.` : '';
+    const buffs = cs.map(c => txtBuff(c.m) ? `<b>${nMov(p,c.id)}</b>: ${txtBuff(c.m)}` : '').filter(Boolean).join(' ');
+    return `<div class="paso"><span class="papel">${['Lead','Switch','Closer'][i]}</span><h4>${esc(p.n)}</h4><div style="grid-column:2">
+      <div class="mv"><span><b>${nMov(p,p.f)}</b> ${chip(f.t)} <small>${esc(f.en)} · rápido</small></span><span class="n">+${f.g} E / ${f.tu} t</span></div>
+      ${cs.map(c => `<div class="mv"><span><b>${nMov(p,c.id)}</b> ${chip(c.m.t)} <small>${esc(c.m.en)}</small></span><span class="n">${c.m.e} E · ${c.n} rápidos</span></div>`).join('')}
+      <p style="margin-top:6px">${cebo} ${buffs}</p><p style="margin-top:4px"><b>Escudos:</b> ${escudo[i]}</p></div></div>`;
+  }).join('')}
+  <p class="ley">E = energía. «t» = turnos que dura el ataque rápido (1 turno = 0,5 s). El asterisco (*) marca los ataques de MT Élite.</p></div>`;
+
+  /* 6. Energía y timing */
+  const rap = team.map(p => ({p, n:Math.min(...p.c.map(id => cuenta(p,id)))})).sort((a,b) => a.n-b.n);
+  const lento = team.filter(p => MV(p.f).tu >= 4);
+  const car = team.map(p => ({p, id:p.c.slice().sort((a,b) => MV(b).e-MV(a).e)[0]})).sort((a,b) => MV(b.id).e-MV(a.id).e)[0];
+  h += `<div class="caja"><h3>6. Energía y timing</h3><ul>
+    <li><b>${esc(rap[0].p.n)}</b> es quien antes llega a un cargado: ${rap[0].n} ataques rápidos. Con él puedes presionar escudos desde el primer momento.</li>
+    <li>El ataque más caro del equipo es <b>${nMov(car.p,car.id)}</b> de ${esc(car.p.n)} (${MV(car.id).e} de energía, ${cuenta(car.p,car.id)} rápidos). No lo tires contra un escudo si puedes evitarlo.</li>
+    ${lento.map(p => `<li><b>${nMov(p,p.f)}</b> de ${esc(p.n)} dura ${MV(p.f).tu} turnos. No empieces uno si el rival está a punto de lanzar su cargado: perderías el turno.</li>`).join('')}
+    <li>Cuenta los ataques rápidos del rival. Si sabes cuántos necesita para su cargado, sabes cuándo viene y si te conviene escudo o cambio.</li>
+    <li>Lanza tu cargado justo al acabar tu ataque rápido, no a mitad. Así no regalas turnos.</li>
+    <li>Cuando un rival esté a punto de caer, remátalo con rápidos y guarda la energía. Entrar al siguiente combate con un cargado listo vale más que un escudo.</li>
+    <li>La energía máxima es 100. Si la tienes llena, cada rápido de más se desperdicia.</li>
+  </ul></div>`;
+
+  /* 7. Debilidades */
+  const cob = cobertura(team), malos = cob.def.filter(x => x.k === 'ko');
+  const fich = s.modo !== 'ejemplo' ? (s.fich = s.fich || fichajes(ev, s.pool)) : [];
+  const graves = malos.filter(x => x.d >= 2), leves = malos.filter(x => x.d < 2);
+  h += `<div class="caja"><h3>7. Debilidades del equipo y cómo taparlas</h3><ul>
+    ${graves.length ? graves.map(x => {
+      const am = P.filter(r => !team.includes(r) && [r.f].concat(r.c).some(id => MV(id).t === x.t)).slice(0,3).map(r => r.n);
+      const res = team.filter(p => mult(x.t, p.t) < 1), suf = team.filter(p => mult(x.t, p.t) > 1).map(p => p.n);
+      return `<li>${chip(x.t)} castiga a ${esc(lista(suf))}. ${am.length ? `En este meta lo usan ${esc(lista(am))}. ` : ''}${res.length ? `Deja que lo reciba <b>${esc(res[0].n)}</b> y guarda los escudos para los otros dos.` : 'Nadie lo resiste: gasta ahí los escudos y no saques a los débiles uno detrás de otro.'}</li>`;
+    }).join('') : '<li><span class="ok-t">Sin debilidades compartidas.</span> Ningún tipo castiga a dos de tus Pokémon a la vez.</li>'}
+    ${leves.length ? `<li>Nadie resiste ${leves.map(x => chip(x.t)).join(' ')}. ${leves.map(x => esc(team.find(p => mult(x.t, p.t) > 1).n) + ' sufre ' + TIPOS[x.t].n).join('; ')}. Cámbialo a tiempo y los otros dos lo reciben neutro.</li>` : ''}
+    ${ev.sin.length ? `<li><b>Rivales incómodos:</b> ${esc(lista(ev.sin.slice(0,5).map(p => p.n)))}. Contra ellos juega a la ventaja de cambio: haz que gasten su respuesta en tu switch y cierra con el que quede.</li>` : ''}
+    ${cob.sinOfe.length ? `<li>No pegas súper eficaz a ${cob.sinOfe.slice(0,6).map(chip).join(' ')}. Ahí ganas por energía y escudos, no por tipo.</li>` : ''}
+    ${fich.length ? `<li><b>Fichajes que más mejoran el equipo:</b> ${fich.map(f => `${esc(f.p.n)}${quiero(f.p.id)?' ★':''} (cobertura ${fmt(f.ev.cob)} %)`).join(', ')}.</li>` : ''}
+  </ul></div>`;
+  return h + '</div>';
+}
+
+/* ───────── Navegación y eventos ───────── */
+const VISTAS = {'meta':vistaMeta, 'mis-pokemon':vistaMis, 'equipo':vistaEquipo, 'guia':vistaGuia};
+function vistaActual(){ const v = location.hash.slice(1); return VISTAS[v] ? v : 'meta'; }
+function pintar(){
+  pintarLigas();
+  const v = vistaActual();
+  $('#vista').innerHTML = VISTAS[v]();
+  document.querySelectorAll('.tabs a').forEach(a => a.dataset.v === v ? a.setAttribute('aria-current','page') : a.removeAttribute('aria-current'));
+}
+function ponerEnEquipo(id, slot){
+  const e = (st.eq[st.liga] = st.eq[st.liga] || []), p = porId(id);
+  if(e.includes(id)) return;
+  if(e.length >= 3){ if(slot == null){ toast('El equipo ya tiene 3. Quita uno primero.'); return; } e.splice(Math.min(slot,2), 1); }
+  const t = e.map(porId).concat([p]);
+  if(new Set(t.map(x => x.d)).size < t.length){ toast('No puedes repetir especie en el equipo.'); return; }
+  if(t.filter(x => x.fl.mega).length > 1){ toast('Solo se permite una megaevolución por equipo.'); return; }
+  e.push(id);
+}
+document.addEventListener('click', ev => {
+  const lg = ev.target.closest('[data-liga]');
+  if(lg){ st.liga = lg.dataset.liga; guardar(); pintar(); return; }
+  const b = ev.target.closest('[data-act]'); if(!b) return;
+  const id = b.dataset.id, a = b.dataset.act, m = mis();
+  if(a === 'tengo'){ m.t[id] ? delete m.t[id] : (m.t[id] = 1); }
+  else if(a === 'quiero'){ m.q[id] ? delete m.q[id] : (m.q[id] = 1); }
+  else if(a === 'poner'){ ponerEnEquipo(id); }
+  else if(a === 'quitar'){
+    const s = situacion();
+    if(s.modo === 'auto' || s.modo === 'ejemplo') st.eq[st.liga] = s.ev.orden.map(p => p.id).filter(x => x !== id);
+    else st.eq[st.liga] = (st.eq[st.liga]||[]).filter(x => x !== id);
+  }
+  else if(a === 'limpiar'){ st.eq[st.liga] = []; }
+  else if(a === 'usar'){ st.eq[st.liga] = b.dataset.ids.split(','); }
+  else if(a === 'vaciar'){ st.mis[st.liga] = {t:{}, q:{}}; st.eq[st.liga] = []; }
+  else if(a === 'auto'){
+    const pool = reserva(), fij = (st.eq[st.liga]||[]).map(porId).filter(Boolean);
+    const fijos = fij.length < 3 ? fij : [];
+    const base = pool.concat(fijos.filter(p => !pool.includes(p)));
+    if(base.length < 3){ toast('Marca al menos 3 Pokémon como «Tengo» para proponer un equipo.'); return; }
+    const r = mejores(base, fijos, 1)[0];
+    if(!r){ toast('No hay combinación válida con esos Pokémon.'); return; }
+    st.eq[st.liga] = fijos.length ? r.orden.map(p => p.id) : [];
+    if(!fijos.length) toast('Mejor equipo: ' + r.orden.map(p => p.n).join(' · '));
+  }
+  guardar(); pintar();
+});
+document.addEventListener('input', ev => {
+  const t = ev.target;
+  if(t.id === 'fQ'){ fil.q = t.value; $('#lista').innerHTML = listaHTML(); }
+  else if(t.id === 'fTipo'){ fil.tipo = t.value; $('#lista').innerHTML = listaHTML(); }
+  else if(t.id === 'fTengo'){ fil.tengo = t.checked; $('#lista').innerHTML = listaHTML(); }
+  else if(t.id === 'fQuiero'){ fil.quiero = t.checked; $('#lista').innerHTML = listaHTML(); }
+  else if(t.id === 'cQuiero'){ st.inclQuiero = t.checked; guardar(); pintar(); }
+});
+/* Arrastrar y soltar (escritorio). En móvil basta con tocar. */
+document.addEventListener('dragstart', ev => { const f = ev.target.closest && ev.target.closest('.ficha'); if(f) ev.dataTransfer.setData('text/plain', f.dataset.id); });
+document.addEventListener('dragover', ev => { const s = ev.target.closest && ev.target.closest('.slot'); if(s){ ev.preventDefault(); s.classList.add('sobre'); } });
+document.addEventListener('dragleave', ev => { const s = ev.target.closest && ev.target.closest('.slot'); if(s) s.classList.remove('sobre'); });
+document.addEventListener('drop', ev => {
+  const s = ev.target.closest && ev.target.closest('.slot'); if(!s) return;
+  ev.preventDefault(); const id = ev.dataTransfer.getData('text/plain'); if(!porId(id)) return;
+  const sit = situacion();
+  if(sit.modo === 'auto' || sit.modo === 'ejemplo') st.eq[st.liga] = [];
+  ponerEnEquipo(id, +s.dataset.slot); guardar(); pintar();
+});
+window.addEventListener('hashchange', () => { pintar(); window.scrollTo(0, 0); });
+
+/* Tema */
+function oscuroAhora(){ const d = document.documentElement.dataset.theme; return d ? d === 'dark' : matchMedia('(prefers-color-scheme:dark)').matches; }
+function pintarTema(){ $('#bTema').textContent = oscuroAhora() ? 'Modo claro' : 'Modo oscuro'; }
+$('#bTema').addEventListener('click', () => { st.tema = oscuroAhora() ? 'light' : 'dark'; document.documentElement.dataset.theme = st.tema; guardar(); pintarTema(); });
+
+/* ───────── Actualización de datos ───────── */
+const dlg = $('#dlg'), dEst = t => { $('#dlgEst').textContent = t; };
+$('#bActualizar').addEventListener('click', () => {
+  $('#dlgFecha').textContent = `Datos actuales: PvPoke, ${DATOS.fecha.split('-').reverse().join('/')}${datosPropios ? ' (descargados por ti)' : ' (incluidos en el archivo)'}.`;
+  dEst(''); dlg.showModal ? dlg.showModal() : dlg.setAttribute('open','');
+});
+$('#bCerrar').addEventListener('click', () => dlg.close());
+function aplicarDatos(d){
+  DATOS = d; datosPropios = true; cacheM = {}; memoS = {};
+  try{ localStorage.setItem(LSD, JSON.stringify(d)); }catch(e){ dEst('Datos cargados, pero no se han podido guardar en este navegador.'); }
+  pintar();
+}
+$('#bDescargar').addEventListener('click', async () => {
+  const base = 'https://raw.githubusercontent.com/pvpoke/pvpoke/master/src/data/';
+  try{
+    dEst('Descargando GameMaster…');
+    const ix = indiceGM(await (await fetch(base + 'gamemaster.json')).json());
+    const d = {fecha: ix.fecha || new Date().toISOString().slice(0,10), ligas:{}, moves:{}};
+    for(const L of LIGAS){
+      dEst('Descargando ' + L.n + '…');
+      const r = await fetch(base + 'rankings/' + L.pvpoke + '.json');
+      if(r.ok) d.ligas[L.id] = convertirLiga(await r.json(), ix, L.cp, 40, d.moves);
+      else if(DATOS.ligas[L.id]){ d.ligas[L.id] = DATOS.ligas[L.id]; for(const p of d.ligas[L.id]) for(const id of [p.f].concat(p.c)) d.moves[id] = d.moves[id] || DATOS.moves[id]; }
+    }
+    aplicarDatos(d); dEst('Listo. Meta actualizado a ' + d.fecha.split('-').reverse().join('/') + '.');
+  }catch(e){
+    dEst('No se ha podido descargar. Comprueba la conexión o usa «Cargar archivos JSON».');
+  }
+});
+$('#fArch').addEventListener('change', async ev => {
+  try{
+    let gm = null, rk = null;
+    for(const f of ev.target.files){ const j = JSON.parse(await f.text()); if(Array.isArray(j)) rk = j; else if(j.pokemon && j.moves) gm = j; }
+    if(!gm || !rk){ dEst('Hacen falta los dos archivos: gamemaster.json y el rankings-XXXX.json de la liga.'); return; }
+    const ix = indiceGM(gm), d = JSON.parse(JSON.stringify(DATOS));
+    d.ligas[st.liga] = convertirLiga(rk, ix, liga().cp, 40, d.moves); d.fecha = ix.fecha || d.fecha;
+    aplicarDatos(d); dEst('Listo. ' + liga().n + ' actualizada con ' + d.ligas[st.liga].length + ' Pokémon.');
+  }catch(e){ dEst('Alguno de los archivos no es un JSON válido de PvPoke.'); }
+  ev.target.value = '';
+});
+$('#bRestaurar').addEventListener('click', () => {
+  try{ localStorage.removeItem(LSD); }catch(e){}
+  DATOS = DATOS_INCLUIDOS; datosPropios = false; cacheM = {}; memoS = {}; pintar(); dEst('Has vuelto a los datos incluidos en el archivo.');
+});
+
+/* ───────── Arranque ───────── */
+if(st.tema) document.documentElement.dataset.theme = st.tema;
+if(!st.liga || !DATOS.ligas[st.liga]){
+  const ahora = Date.now();
+  const act = LIGAS.find(l => DATOS.ligas[l.id] && estadoLiga(l.id, ahora).k === 'on') || LIGAS.find(l => DATOS.ligas[l.id] && estadoLiga(l.id, ahora).k === 'prox');
+  st.liga = (act || LIGAS[0]).id;
+}
+pintarTema(); pintar(); conectarNube();
+
+/* App instalable: el service worker guarda la página para abrirla sin conexión. */
+if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>

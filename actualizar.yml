@@ -1,0 +1,47 @@
+name: Actualizar y publicar Team GO
+
+on:
+  schedule:
+    - cron: '30 22 * * 2'   # martes 22:30 UTC (23:30 en la península en invierno), tras la rotación de ligas
+  workflow_dispatch:         # botón «Run workflow» para lanzarla a mano
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generar la página con el meta de PvPoke
+        run: node tools/build.js
+      - name: Guardar index.html y sw.js en el repositorio
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html sw.js
+          git diff --cached --quiet || git commit -m "Meta actualizado ($(date -u +%F))"
+          git push || echo "No se pudo guardar el commit; se publica igualmente."
+      - name: Preparar los archivos del sitio
+        run: |
+          mkdir _site
+          cp index.html sw.js manifest.json icono.svg icono-192.png icono-512.png _site/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: despliegue
+        uses: actions/deploy-pages@v4

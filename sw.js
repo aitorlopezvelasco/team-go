@@ -1,5 +1,5 @@
 /* Generado por tools/build.js. No editar a mano. */
-const CACHE = 'team-go-2026-11-17-e74978da';
+const CACHE = 'team-go-2026-11-24-eaedeae4';
 const BASICOS = ['./', 'index.html', 'manifest.json', 'icono.svg', 'icono-192.png', 'icono-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(BASICOS)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => {
